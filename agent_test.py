@@ -28,8 +28,8 @@ file_reader = FileReaderTool()
 
 file_knowledge = FileKnowledge([
     "users.json",
-    "markdown.md",
-    "well_known_apps.json"
+    "users.md",
+    "users.csv"
 ])
 
 model = ChatOllama (
