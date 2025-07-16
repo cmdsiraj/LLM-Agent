@@ -40,6 +40,17 @@ model = ChatOllama (
     knowledge=[file_knowledge]
 )
 
-model.start_chat()
+
+while(True):
+    print("Enter '/exit' or '/quit' or '/bye' to quit")
+    input_text = input("You: ").strip()
+
+    if input_text.lower() in ['/exit', '/quit', '/bye']:
+        break
+    
+    reply = model.chat(input_text)
+    print(f"Agent: {reply}")
+
+
 with open("chat_history.json", "w") as f:
     json.dump(model.chat_history, f, indent=2)

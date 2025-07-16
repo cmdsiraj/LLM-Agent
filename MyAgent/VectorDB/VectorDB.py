@@ -34,10 +34,5 @@ class VectorDB:
         query_embedding = self.model.encode([query])
         D, I = self.index.search(np.array(query_embedding), top_k)
 
-        return [
-            {
-                "chunk": self.chunks[i],
-                "score": float(D[0][idx])
-            }
-            for idx, i in enumerate(I[0])
-        ]
+        return '\n\n'.join([f"Content: {self.chunks[i]}" for idx, i in enumerate(I[0])
+        ])
