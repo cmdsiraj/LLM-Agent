@@ -3,19 +3,24 @@ from MyAgent.Tools.FileReaderTool import FileReaderTool
 import json
 from MyAgent.Knowledge.KnowledgeSource import FileKnowledge
 import pymysql
+from dotenv import load_dotenv
+import os
 from collections import defaultdict
 from MyAgent.LLM.GeminiLLM import GeminiLLM
-from dotenv import load_env
 from urllib.parse import urlparse
 
 # mysql://<username>:<password>@<host>:<port>/<database>
-def get_schema(user:str, password:str, host:str, port:int, database:str):
-    
+def get_schema(conn_string: str):
+
+    parsed = urlparse(conn_string)
+
+    database = parsed.path.lstrip("/")
+
     connection = pymysql.connect(
-        user=user,
-        password=password,
-        host=host,
-        port=port,
+        user=parsed.username,
+        password=parsed.password,
+        host=parsed.hostname,
+        port=parsed.port,
         database=database
     )
 
@@ -62,26 +67,10 @@ def get_schema(user:str, password:str, host:str, port:int, database:str):
     
     return schema, foreign_map
 
-def destruct_connection_string(connection_string:str):
-    try:
-        parsed = urlparse(connection_string)
-        print("Dialect + Driver:", parsed.scheme)
-        print("Username:", parsed.username)
-        print("Password:", parsed.password)
-        print("Host:", parsed.hostname)
-        print("Port:", parsed.port)
-        print("Database:", parsed.path.lstrip("/"))
-    except Exception as e:
-        print(e)
-
 def main():
-    schema, foreign_map=get_schema(
-        user="root",
-        password="password",
-        host="localhost",
-        port=3306,
-        database="sakila"
-    )
+    load_dotenv()
+    conn_string = os.getenv("DATABASE_STRING")
+    schema, foreign_map=get_schema(conn_string=conn_string)
 
     role = (
         "You are a friendly and knowledgeable SQL assistant who helps users interact with databases through natural language. "
@@ -132,3 +121,4 @@ def main():
         json.dump(history, f, indent=2)
 
 
+main()
