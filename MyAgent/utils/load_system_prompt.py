@@ -36,6 +36,8 @@ def get_system_prompt(role: str, goal: str, back_story: str, tools: list[Tool]):
             'ARGS: {"arg_name": "value"}  (This must be valid JSON)'
             "</TOOLUSE>\n"
 
+            "You need to use tool only when the requested information didn't found in the context. "
+            "You can request for a tool use when there are no tools. "
             "Wait for the tool result before continuing the conversation. "
 
             "Rules:\n"

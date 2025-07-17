@@ -1,17 +1,22 @@
-import ollama
 import re
 import json
 from MyAgent.Knowledge.KnowledgeSource import FileKnowledge
 from MyAgent.VectorDB.VectorDB import VectorDB
 from MyAgent.Tools.Tool import Tool
 from MyAgent.utils.load_system_prompt import get_system_prompt
+from MyAgent.LLM.LLMBase import LLM
+from MyAgent.LLM.OllamaLLM import OllamaLLM
 
 
 
-class ChatOllama:
+class Agent:
     
-    def __init__(self, role: str, goal: str, back_story: str, model="llama3", chat_history=[], tools:list[Tool]=[], knowledge: list = None):
-        self.model=model
+    def __init__(self, role: str, goal: str, back_story: str, llm:LLM , chat_history=[], tools:list[Tool]=[], knowledge: list = None, top_k: int = 3):
+        if llm:
+            self.llm = llm
+        else:
+            self.llm = OllamaLLM(model_name="llama3")
+            
         self.chat_history=chat_history
         self.system_prompt=get_system_prompt(role=role, goal=goal, back_story=back_story, tools=tools)
         self.tools={tool.name: tool for tool in tools}
@@ -19,6 +24,8 @@ class ChatOllama:
 
         if knowledge:
             self.__add_to_db__(knowledgeFiles=knowledge)
+        
+        self.__top_k = top_k
 
 
     
@@ -36,7 +43,7 @@ class ChatOllama:
         if self.__vectorDb == None:
             return self.__vectorDb
         
-        return self.__vectorDb.search(query)
+        return self.__vectorDb.search(query, top_k=self.__top_k)
     
     
 
@@ -75,6 +82,7 @@ class ChatOllama:
         else:
             None
     
+
     def __get_tools_content(self, tools_needed: list[Tool]):
         tools_results = []
         for tool in tools_needed:
@@ -87,8 +95,9 @@ class ChatOllama:
 
     def __chat__(self, messages):
         prompt = [self.system_prompt] + messages
-        result = ollama.chat(model=self.model, messages=prompt)
-        return result['message']['content']
+        # result = ollama.chat(model=self.model, messages=prompt)
+        result = self.llm.chat(messages=prompt)
+        return result
         
     def chat(self, user_input):
 
@@ -127,46 +136,3 @@ class ChatOllama:
         self.chat_history = self.chat_history[-20:]
 
         return reply
-        
-    # def start_chat(self):   
-    #     print("Type 'quit' or 'exit' or 'bye' to quit\n")
-    #     while(True):
-    #         user_input = input("You: ")
-    #         if user_input.strip().lower() in ['exit', 'bye', 'quit']:
-    #             break
-
-    #         if self.__vectorDb:
-    #             context = self.__get_context__(user_input)
-    #             user_input = (
-    #                 "you can use the context to answer the question: "
-    #                 f"{context}"
-    #                 f"Question: {user_input}"
-    #             )
-
-            
-    #         self.chat_history.append({"role": "user", "content": user_input})
-    #         self.chat_history = self.chat_history[-20:]
-
-    #         reply = self.__chat__(self.chat_history)
-
-    #         tools_needed=self.__extract_tools_needed__(reply)
-    #         if(len(tools_needed)!=0):
-    #             for tool in tools_needed:
-    #                 tool_result = self.__run_tools__(**tool)
-    #                 self.chat_history.append({"role": "assistant", "content": f"TOOL RESULT: {tool_result}"})
-                    
-    #             self.chat_history.append({
-    #                 "role": "user",
-    #                 "content": "Now use that result to answer my question."
-    #                 })
-    #             reply = self.__chat__(self.chat_history)
-
-                    
-    #         #     print(f"Need to use tools: {tools_needed}")
-    #         #     continue
-            
-    #         print('Agent: ', reply)
-    #         print("\n"*2)
-
-    #         self.chat_history.append({"role": "agent", "content": reply})
-    #         self.chat_history = self.chat_history[-20:]

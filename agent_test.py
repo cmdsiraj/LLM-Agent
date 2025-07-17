@@ -1,7 +1,9 @@
-from MyAgent.Agent.MyLlamaAgent import ChatOllama
+from MyAgent.Agent.MyAgent import Agent
 from MyAgent.Tools.FileReaderTool import FileReaderTool
 import json
 from MyAgent.Knowledge.KnowledgeSource import FileKnowledge
+from MyAgent.LLM.OllamaLLM import OllamaLLM
+from MyAgent.LLM.GeminiLLM import GeminiLLM
 
 
 role = (
@@ -32,11 +34,14 @@ file_knowledge = FileKnowledge([
     "users.csv"
 ])
 
-model = ChatOllama (
+llm = GeminiLLM(model_name="gemini-2.0-flash-lite")
+
+model = Agent (
     role=role,
     goal=goal,
     back_story=back_story,
-    tools=[file_reader],
+    llm=llm,
+    # tools=[file_reader],
     knowledge=[file_knowledge]
 )
 
@@ -49,7 +54,7 @@ while(True):
         break
     
     reply = model.chat(input_text)
-    print(f"Agent: {reply}")
+    print(f"Agent({llm.model_name()}): {reply}")
 
 
 with open("chat_history.json", "w") as f:
