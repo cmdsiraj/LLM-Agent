@@ -1,6 +1,8 @@
 .python-version
 .gitignore
 .env
+.DS_Store
+db_test.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
