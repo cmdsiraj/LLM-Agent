@@ -112,24 +112,24 @@ class Agent:
         
         self.chat_history.append({"role": "user", "content":user_input})
 
-        #Now, passing the prompt to model
-        reply = self.__chat__(self.chat_history)
-
-        # Checking if the model response has involved use of any tools
-        tools_needed = self.__extract_tools_needed__(reply)
-        if(tools_needed):
-            tools_content = self.__get_tools_content(tools_needed)
-            self.chat_history.append({
-                "role": 
-                    "tool assistant", 
-                "content": 
-                    "Use the following content from tools to answer the users questions:\n"
-                    f"{tools_content}"
-                    f"user question: {user_input}"
-                })
-            
-            # Once we have the tools content, we pass it to our model to get response again.
+        while True:
+            #Now, passing the prompt to model
             reply = self.__chat__(self.chat_history)
+
+            tools_needed = self.__extract_tools_needed__(reply)
+            # Checking if the model response has involved use of any tools
+            if(tools_needed):
+                tools_content = self.__get_tools_content(tools_needed)
+                self.chat_history.append({
+                    "role": 
+                        "tool assistant", 
+                    "content": 
+                        "Use the following content from tools to answer the users questions:\n"
+                        f"{tools_content}"
+                        f"user question: {user_input}"
+                    })
+            else:
+                break
 
             # We include the agents final response in our chat history
         self.chat_history.append({"role": "agent", "content": reply})

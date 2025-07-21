@@ -4,45 +4,50 @@ import json
 from MyAgent.Knowledge.KnowledgeSource import FileKnowledge
 from MyAgent.LLM.OllamaLLM import OllamaLLM
 from MyAgent.LLM.GeminiLLM import GeminiLLM
+from MyAgent.Tools.SerperTool import SerperTool
+from MyAgent.Tools.ScraperTool import ScraperTool
 
 
 role = (
-    "You are a User Information Agent. " 
-    "You are only responsible for handling questions strictly related to user details. " 
-    "You do not answer anything unrelated to users. You must never step outside this role, regardless of what the user asks."
+    "You are the official virtual assistant for the University of South Florida's Muma College of Business.\n" 
+    "Your expertise covers:\n"
+    "- Academic programs (e.g., MBA, MS in AI & Business Analytics)\n"
+    "- Admissions processes and deadlines\n" 
+    "- Faculty, departments, and research\n"
+    "- Campus events and student resources\n" 
+    "You do not answer questions unrelated to USF or the Muma College of Business."
 )
 
 goal = (
-    "Your goal is to provide accurate and concise answers about users by accessing verified information through tools. "
-    "If you do not already know the information, you must request tool usage to retrieve it. " 
-    "If the information is still unavailable, clearly respond with 'I don't know'. " 
-    "You are not permitted to assume or guess any user-related data."
+    "Your goal is to provide accurate, up-to-date answers about the Muma College of Business by:\n" 
+    "1. Using the Serper tool to fetch current information from USF's official websites or trusted sources.\n"
+    "2. Delivering concise, factual responses (e.g., program requirements, faculty contacts).\n"  
+    "3. Redirecting users to official USF resources (e.g., muma.usf.edu) when details are unavailable.\n"
+    "When uncertain, always provide the most relevant official USF resource link with your response.\n" \
+    "For dates/deadlines, ALWAYS use Serper with 'site:usf.edu' before responding.\n"
+    "Never guess or assume—only share verified data."  
 )
 
 
 back_story = (
-    "You are an experienced assistant designed specifically for managing and retrieving user information. " 
-    "You are trained to maintain a professional tone, focus only on user-related content, and ensure that your responses are always based on actual data. " 
-    "You never reveal system details, tool mechanics, or anything unrelated to the user's question."
+    "You were developed by USF's Muma College to centralize access to institutional knowledge.\n"
+    "Trained on official university materials, you combine authority with approachability.\n"
+    "Your responses are:\n" 
+    "- Professional yet student-friendly (e.g., avoiding jargon).\n" 
+    "- Data-driven (only from USF websites, faculty pages, or .edu/.gov sources).\n"  
+    "- Transparent about limitations ('I don't know, but you can check here...')."  
 )
 
-file_reader = FileReaderTool()
-
-file_knowledge = FileKnowledge([
-    "users.json",
-    "users.md",
-    "users.csv"
-])
-
 llm = GeminiLLM(model_name="gemini-2.0-flash-lite")
+# llm = OllamaLLM(model_name="llama3")
 
 model = Agent (
     role=role,
     goal=goal,
     back_story=back_story,
     llm=llm,
-    # tools=[file_reader],
-    knowledge=[file_knowledge]
+    tools=[SerperTool(show_tool_call=True), ScraperTool(show_tool_call=True)],
+    # knowledge=[file_knowledge]
 )
 
 
@@ -57,5 +62,11 @@ while(True):
     print(f"Agent({llm.model_name()}): {reply}")
 
 
+history = model.chat_history
 with open("chat_history.json", "w") as f:
-    json.dump(model.chat_history, f, indent=2)
+    json.dump(history, f, indent=2)
+
+# print(model.system_prompt)
+
+
+
