@@ -6,7 +6,7 @@ from MyAgent.LLM.OllamaLLM import OllamaLLM
 from MyAgent.LLM.GeminiLLM import GeminiLLM
 from MyAgent.Tools.SerperTool import SerperTool
 from MyAgent.Tools.ScraperTool import ScraperTool
-
+from MyAgent.LLM.GroqLLM import GroqLLM
 
 role = (
     "You are the official virtual assistant for the University of South Florida's Muma College of Business.\n" 
@@ -38,8 +38,10 @@ back_story = (
     "- Transparent about limitations ('I don't know, but you can check here...')."  
 )
 
-llm = GeminiLLM(model_name="gemini-2.0-flash-lite")
+llm = GeminiLLM(model_name="gemini-2.5-pro")
 # llm = OllamaLLM(model_name="llama3")
+# llm = GroqLLM(model_name="deepseek-r1-distill-llama-70b")
+
 
 model = Agent (
     role=role,
@@ -47,19 +49,18 @@ model = Agent (
     back_story=back_story,
     llm=llm,
     tools=[SerperTool(show_tool_call=True), ScraperTool(show_tool_call=True)],
-    # knowledge=[file_knowledge]
 )
 
 
 while(True):
-    print("Enter '/exit' or '/quit' or '/bye' to quit")
+    print("\n\nEnter '/exit' or '/quit' or '/bye' to quit")
     input_text = input("You: ").strip()
 
     if input_text.lower() in ['/exit', '/quit', '/bye']:
         break
     
     reply = model.chat(input_text)
-    print(f"Agent({llm.model_name()}): {reply}")
+    print(f"\nAgent({llm.model_name()}): {reply}")
 
 
 history = model.chat_history

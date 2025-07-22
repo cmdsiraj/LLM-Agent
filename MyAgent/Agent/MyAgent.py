@@ -11,11 +11,8 @@ from MyAgent.LLM.OllamaLLM import OllamaLLM
 
 class Agent:
     
-    def __init__(self, role: str, goal: str, back_story: str, llm:LLM , chat_history=[], tools:list[Tool]=[], knowledge: list = None, top_k: int = 3):
-        if llm:
-            self.llm = llm
-        else:
-            self.llm = OllamaLLM(model_name="llama3")
+    def __init__(self, role: str, goal: str, back_story: str, llm:LLM , chat_history=[], tools:list[Tool]=[], knowledge: list = None, top_k: int = 3, max_chat_history:int=20):
+        self.llm = llm if llm else OllamaLLM(model_name="llama3")
             
         self.chat_history=chat_history
         self.system_prompt=get_system_prompt(role=role, goal=goal, back_story=back_story, tools=tools)
@@ -26,6 +23,8 @@ class Agent:
             self.__add_to_db__(knowledgeFiles=knowledge)
         
         self.__top_k = top_k
+
+        self.__max_chat_history = max_chat_history
 
 
     
@@ -83,7 +82,7 @@ class Agent:
             None
     
 
-    def __get_tools_content(self, tools_needed: list[Tool]):
+    def __get_tool_execution_results(self, tools_needed: list[Tool]):
         tools_results = []
         for tool in tools_needed:
             tool_result = self.__run_tools__(**tool)
@@ -112,27 +111,32 @@ class Agent:
         
         self.chat_history.append({"role": "user", "content":user_input})
 
-        while True:
-            #Now, passing the prompt to model
-            reply = self.__chat__(self.chat_history)
+        reply = self.__chat__(self.chat_history)
 
-            tools_needed = self.__extract_tools_needed__(reply)
-            # Checking if the model response has involved use of any tools
-            if(tools_needed):
-                tools_content = self.__get_tools_content(tools_needed)
-                self.chat_history.append({
-                    "role": 
-                        "tool assistant", 
-                    "content": 
-                        "Use the following content from tools to answer the users questions:\n"
-                        f"{tools_content}"
-                        f"user question: {user_input}"
-                    })
-            else:
-                break
+        tools_needed = self.__extract_tools_needed__(reply)
+
+        if(tools_needed):
+             while True:
+                #Now, passing the prompt to model
+                reply = self.__chat__(self.chat_history)
+
+                tools_needed = self.__extract_tools_needed__(reply)
+                # Checking if the model response has involved use of any tools
+                if(tools_needed):
+                    tools_content = self.__get_tool_execution_results(tools_needed)
+                    self.chat_history.append({
+                        "role": 
+                            "tool assistant", 
+                        "content": 
+                            "Use the following content from tools to answer the users questions:\n"
+                            f"{tools_content}"
+                            f"user question: {user_input}"
+                        })
+                else:
+                    break
 
             # We include the agents final response in our chat history
-        self.chat_history.append({"role": "agent", "content": reply})
-        self.chat_history = self.chat_history[-20:]
+        self.chat_history.append({"role": "assistant", "content": reply})
+        self.chat_history = self.chat_history[-self.__max_chat_history:]
 
         return reply
