@@ -2,6 +2,7 @@
 .gitignore
 .env
 db_test.py
+logs
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

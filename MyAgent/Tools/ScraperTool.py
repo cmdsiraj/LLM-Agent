@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from MyAgent.Tools.Tool import Tool
+from MyAgent.utils.print_utils import log_tool_action
 
 class ScraperTool(Tool):
 
@@ -22,7 +23,7 @@ class ScraperTool(Tool):
     def description(self):
         return self.__description
     
-    def run(self, urls: list[str]):
+    def _run_implementation(self, urls: list[str]):
 
         url_contents = dict()
         headers = {
@@ -30,7 +31,7 @@ class ScraperTool(Tool):
         }
 
         if self.show_tool_call:
-            print(f"Scraping {urls}")
+            log_tool_action("Scraping URLs:", urls, "📄", "magenta")
 
         for url in urls:
             try:
@@ -55,7 +56,3 @@ class ScraperTool(Tool):
                 url_contents[url] = f"[ERROR]: {e}"
         
         return url_contents
-    
-
-
-"What are the specific course requirements for the MS in AIBA at USF Muma College of Business, including any prerequisite courses and the full list of core and elective courses?"

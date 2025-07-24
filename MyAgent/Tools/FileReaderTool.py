@@ -18,7 +18,7 @@ class FileReaderTool(Tool):
         return self.__description__
     
     
-    def run(self, file_path: str):
+    def _run_implementation(self, file_path: str):
 
         file_path = os.path.abspath(file_path)
 
@@ -41,4 +41,4 @@ class FileReaderTool(Tool):
             else:
                 return Exception(f"Invalid File type. accepts only .json, .csv, .txt and .md extention files, but received {file_type}")
             
-            return content
+        return content

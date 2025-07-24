@@ -1,15 +1,31 @@
 import requests
 from MyAgent.Tools.Tool import Tool
+from MyAgent.utils.print_utils import log_tool_action
+import os
+from dotenv import load_dotenv
 
 class SerperTool(Tool):
 
-    def __init__(self, show_tool_call: bool=False):
+    def __init__(self, api_key=None, show_tool_call: bool=False):
         self.__name = "Serper Search"
         self._description = (
             "Searches the web using Serper and returns the top results. "
             "Use this tool when the user's question requires recent, external, or otherwise unknown information from the internet. "
         )
         self.show_tool_call = show_tool_call
+
+        try:
+            load_dotenv()
+            self.serper_url = os.getenv("SERPER_URL")
+            if api_key is None:
+                
+                api_key = os.getenv("SERPER_API_KEY")
+
+            self.__api_key = api_key
+        except Exception as e:
+            print()
+
+
     
     @property
     def name(self):
@@ -19,10 +35,10 @@ class SerperTool(Tool):
     def description(self):
         return self._description
     
-    def run(self, search_query: str):
-        serper_url = "https://google.serper.dev/search"
+    def _run_implementation(self, search_query: str):
+        serper_url = self.serper_url
         headers = {
-            "X-API-KEY": "b013f073d4b72a84754b47fe3879307fc8852445",
+            "X-API-KEY": self.__api_key,
             "Content-Type": "application/json"
         }
         data = {
@@ -30,7 +46,7 @@ class SerperTool(Tool):
         }
 
         if self.show_tool_call:
-            print(f"Conducting web search for {search_query}")
+            log_tool_action("Conducting web search for", search_query, "🔍", "yellow")
 
         response = requests.post(url=serper_url, headers=headers, json=data)
 
