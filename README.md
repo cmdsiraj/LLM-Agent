@@ -20,8 +20,8 @@ This section covers the general dependencies and environment preparation for you
 #### For Windows Users:
 
 1.  **Python Version:** Ensure you are using **Python version 3.9.6 or lower**.
-2.  **Install Dependencies:** Navigate to your project directory in the command prompt and install the necessary libraries.
-    Create a `requirements.txt` file in your project root with the following content:
+2.  Create a virtual environment (if needed)
+3.  **Install Dependencies:** Navigate to your project directory in the command prompt and install the necessary libraries:
     Then, install them using pip:
     ```bash
     pip install -r requirements.txt
@@ -57,6 +57,7 @@ To use Google Gemini, you need an API key from Google AI Studio:
     GOOGLE_API_KEY="YOUR_GEMINI_API_KEY"
     ```
     Replace `"YOUR_GEMINI_API_KEY"` with the actual key you obtained.
+    **For best results, use gemini-2.5-pro model (GeminiLLM(model_name="gemini-2.5-pro))**
 
 #### c. Select your LLM in `agent_test.py`
 
