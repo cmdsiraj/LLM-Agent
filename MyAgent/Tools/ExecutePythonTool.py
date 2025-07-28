@@ -31,12 +31,16 @@ class ExecutePythonTool(Tool):
             "python", "/code/script.py"
         ]
 
-        result = subprocess.run(docker_cmd, capture_output=True, text=True)
-        return {
-            "stdout": result.stdout.strip(),
-            "stderr": result.stderr.strip(),
-            "exit_code": result.returncode
-        }
+        try:
+            result = subprocess.run(docker_cmd, capture_output=True, text=True)
+            return {
+                "stdout": result.stdout.strip(),
+                "stderr": result.stderr.strip(),
+                "exit_code": result.returncode
+            }
+        except Exception as e:
+            print(f"Got exception while executing python code: {e}")
+            return e
     
     def _run_implementation(self, code_string: str):
 
