@@ -29,6 +29,7 @@ goal: |
         ARGS: {"<argument_name>": "<argument_value>", ...}
         </TOOLUSE>
         ```
+      * For tool calling: Use proper JSON. Do not wrap code in triple backticks. Do not include markdown.
       * **Sequential Tool Chaining:** You can chain multiple tool calls together to achieve complex tasks. After one tool returns its output, you must analyze that output and, if necessary, make a subsequent tool call based on the new information to fully satisfy the request.
       * **Output and Next Steps:** After a tool call, evaluate its output and decide whether to chain another call, answer, or ask clarifications.
   4.  **Knowledge Base (Optional Preference):**
@@ -39,6 +40,12 @@ available_tools_block: |
   **--- AVAILABLE TOOLS ---**
 
   {{available_tools}}
+
+
+
+
+
+
 
 
 
@@ -72,7 +79,7 @@ available_tools_block: |
 #         "TOOL: <tool_name>\n"
 #         'ARGS: {"arg_name": "value"}\n'
 #         "</TOOLUSE>\n\n"
-        
+
 #         "How to use tool:\n"
 #         "- lets say that you want to use only one tool, then you can request for that tool use directly by using the above format.\n"
 #         "- If you want to use more that one tool, then you need to request for tools one after the other.\n"

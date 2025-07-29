@@ -26,29 +26,38 @@ config = load_aget_config()
 # llm = GroqLLM(model_name="deepseek-r1-distill-llama-70b")
 
 
-researcher = Agent(
-    name=config["researcher"]["name"],
-    role=config["researcher"]["role"],
-    goal=config["researcher"]["goal"],
-    back_story=config["researcher"]["backstory"],
-    llm=GeminiLLM(model_name="gemini-2.5-flash"),
-    tools=[SerperTool(show_tool_call=True), ScraperTool(show_tool_call=True)]
+idea_agent = Agent(
+    name=config["idea_agent"]["name"],
+    role=config["idea_agent"]["role"],
+    goal=config["idea_agent"]["goal"],
+    back_story=config["idea_agent"]["backstory"],
+    llm=GeminiLLM(model_name="gemini-2.5-flash")
 )
 
-writer_agent = Agent(
-    name=config["writer"]["name"],
-    role=config["writer"]["role"],
-    goal=config["writer"]["goal"],
-    back_story=config["writer"]["backstory"],
-    llm=GeminiLLM(model_name="gemini-2.5-flash-lite")
+market_agent = Agent(
+    name=config["market_agent"]["name"],
+    role=config["market_agent"]["role"],
+    goal=config["market_agent"]["goal"],
+    back_story=config["market_agent"]["backstory"],
+    llm=GeminiLLM(model_name="gemini-2.5-flash"),
+    tools=[SerperTool(show_tool_call=True)]
+)
+
+planner_agent = Agent(
+    name=config["planner_agent"]["name"],
+    role=config["planner_agent"]["role"],
+    goal=config["planner_agent"]["goal"],
+    back_story=config["planner_agent"]["backstory"],
+    llm=GeminiLLM(model_name="gemini-2.5-pro"),
+    tools=[ExecutePythonTool(show_tool_call=True)]
 )
 
 model = AgentManager(
-    agents=[researcher, writer_agent],
+    agents=[idea_agent, market_agent, planner_agent],
     out_dir="output.md"
 )
 
-message = "Create a short report on the impact of electric vehicles on Florida's economy."
+message = "I'm thinking of starting a subscription box service for eco-friendly personal care products. It should help customers discover sustainable alternatives to everyday items like shampoo, toothpaste, and deodorant."
 
 result = model.execute(message=message)
 

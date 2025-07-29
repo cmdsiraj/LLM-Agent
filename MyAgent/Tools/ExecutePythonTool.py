@@ -9,7 +9,11 @@ class ExecutePythonTool(Tool):
 
     def __init__(self, show_tool_call=False):
         self.__name = "Python_code_execution_tool"
-        self.__description = "Given a python code as string, will execute and returns back the result of execution"
+        self.__description = (
+            "Executes Python code and returns the output. "
+            "Use valid JSON in ARGS. "
+            "Wrap the code in a JSON string using single quotes or escape double quotes. "
+            )
         self.show_tool_call = show_tool_call
     
     @property

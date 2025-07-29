@@ -20,7 +20,7 @@ def get_tool_arguments(tool: Tool):
 
 def format_tools(tools: list[Tool]):
     if not tools:
-        return "No tools assigned."
+        return "None"
     
     return "\n".join(
         [
@@ -33,7 +33,6 @@ def format_tools(tools: list[Tool]):
 
 
 def extract_tools_needed(agent_text):
-
     block_pattern = r"(<?/?TOOLUSE>?.*?<?/?TOOLUSE>?)"
     result1 = re.findall(block_pattern, agent_text, re.DOTALL | re.IGNORECASE)
 
@@ -42,19 +41,37 @@ def extract_tools_needed(agent_text):
 
     for block in result1:
         found_tool = re.findall(in_block_pattern, block, re.DOTALL)
+        if not found_tool:
+            continue
+
         name = found_tool[0][0]
-        args_str=found_tool[0][1].strip()
+        args_str = found_tool[0][1].strip()
 
         try:
             args = json.loads(args_str)
-        except json.JSONDecodeError as e:
-            args = json.loads(args_str.replace("'", '"'))
-        except Exception as e:
-            print(f"Error occured while decoidng args: {e}")
-            return
+        except json.JSONDecodeError:
+            try:
+                # Attempt to repair just the content of the code string
+                repaired = (
+                    args_str.replace('\\', '\\\\')
+                            .replace('"', '\\"')
+                            .replace('\n', '\\n')
+                            .replace('\t', '\\t')
+                )
+
+                # Extract value for 'code_string' using regex or fallback
+                match = re.search(r'"code_string"\s*:\s*"(.*)', repaired, re.DOTALL)
+                if match:
+                    code_val = match.group(1)
+                    if code_val.endswith('"}'):
+                        code_val = code_val[:-2]  # remove trailing "}
+                    args = {"code_string": code_val}
+                else:
+                    args = {"code_string": repaired}
+            except Exception as e:
+                print(f"[Tool Extraction Error] Failed to fix ARGS: {e}")
+                continue
+
         tools_needed.append({"tool_name": name, "args": args})
 
-    if len(tools_needed)>0:
-        return tools_needed
-    else:
-        None
+    return tools_needed if tools_needed else []
