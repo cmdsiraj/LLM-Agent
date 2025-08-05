@@ -31,7 +31,7 @@ def get_system_prompt(role: str, goal: str, back_story: str, tools: list[Tool]):
     available_tools = format_tools(tools=tools)
     # print(f"Available Tools: \n {available_tools}")
     # system_message = load_system_prompt(role=role, goal=goal, back_story=back_story, available_tools=available_tools)
-    system_prompt_yaml_path = Path(__file__).parent.parent / "prompts" / "system_prompt.yaml"
+    system_prompt_yaml_path = Path(__file__).parent.parent / "config" / "system_prompt.yaml"
     prompt_cfg = yaml.safe_load(system_prompt_yaml_path.read_text())
 
     filled_prompt = (

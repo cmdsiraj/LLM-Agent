@@ -7,10 +7,13 @@ from dotenv import load_dotenv
 class SerperTool(Tool):
 
     def __init__(self, api_key=None, show_tool_call: bool=False):
+        self.search_types = ["search", "images", "videos", "places", "maps", "reviews", "news", "shopping", "scholar", "patents"]
+
         self.__name = "Serper Search"
         self._description = (
             "Searches the web using Serper and returns the top results. "
             "Use this tool when the user's question requires recent, external, or otherwise unknown information from the internet. "
+            f"Valid arguments for search_type are {self.search_types} "
         )
         self.show_tool_call = show_tool_call
 
@@ -35,8 +38,12 @@ class SerperTool(Tool):
     def description(self):
         return self._description
     
-    def _run_implementation(self, search_query: str):
-        serper_url = self.serper_url
+    def _run_implementation(self, search_query: str, search_type: str = "search"):
+        if search_type not in self.search_types:
+            search_type = "search"
+
+        serper_url = self.serper_url+f"/{search_type}"
+        
         headers = {
             "X-API-KEY": self.__api_key,
             "Content-Type": "application/json"
@@ -46,8 +53,9 @@ class SerperTool(Tool):
         }
 
         if self.show_tool_call:
-            log_tool_action("Conducting web search for", search_query, "🔍", "yellow")
+            log_tool_action(label="Conducting web search for", detail=f"{search_query} [search type: {search_type}]", emoji="🔍", color="yellow")
 
         response = requests.post(url=serper_url, headers=headers, json=data)
+        # print(f"serper response: {response.json()}\n")
 
-        return response.json()['organic']
+        return response.json()

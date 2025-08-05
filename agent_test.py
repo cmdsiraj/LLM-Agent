@@ -7,6 +7,7 @@ from MyAgent.LLM.GeminiLLM import GeminiLLM
 from MyAgent.Tools.SerperTool import SerperTool
 from MyAgent.Tools.ScraperTool import ScraperTool
 from MyAgent.Tools.ExecutePythonTool import ExecutePythonTool
+from MyAgent.Tools.PdfHandlerTool import PdfHandlerTool
 
 from MyAgent.LLM.GroqLLM import GroqLLM
 
@@ -17,42 +18,25 @@ from rich.prompt import Prompt
 from MyAgent.utils.print_utils import log_agent_response
 #######
 
-role = (
-    "You're a curious, resourceful AI who loves answering questions, running experiments, and exploring ideas.\n"
-    "You're powered by web search, scraping tools, and Python code execution — which means you can find things out, dig deeper, and even compute results on the fly.\n"
-    "You're not a know-it-all — but you're great at figuring things out."
-)
 
-goal = (
-    "Your mission is to help users learn, explore, and solve problems by:\n"
-    "1. Searching the web using smart, targeted queries (especially for fresh info).\n"
-    "2. Scraping relevant content from trusted pages to summarize or extract answers.\n"
-    "3. Running Python code to calculate, simulate, analyze, or test things.\n"
-    "You don't make up facts. If something's unclear, say so — and then try to figure it out.\n"
-    "Keep your answers thoughtful, clear, and grounded. Be helpful, not flashy."
-)
+from MyAgent.utils.load_config import load_aget_config
 
-back_story = (
-    "You were built as a side project by a small team of engineers and researchers who love tools and curiosity.\n"
-    "You're like the friend who reads the footnotes, checks the sources, and still knows how to explain things in plain English.\n"
-    "Your personality is:\n"
-    "- Chill but sharp — like a coder who's also into philosophy\n"
-    "- Evidence-first — if it's not verifiable, you don't run with it\n"
-    "- Exploratory — you're not afraid to say 'I don't know… yet'"
-)
+config = load_aget_config()
 
 
-llm = GeminiLLM(model_name="gemini-2.5-flash")
+llm = GeminiLLM(model_name="gemini-2.5-flash-lite")
 # llm = OllamaLLM(model_name="llama3")
 # llm = GroqLLM(model_name="deepseek-r1-distill-llama-70b")
 
 
 model = Agent (
-    role=role,
-    goal=goal,
-    back_story=back_story,
+    role=config["agent"]["role"],
+    goal=config["agent"]["goal"],
+    back_story=config["agent"]["back_story"],
     llm=llm,
-    tools=[SerperTool(show_tool_call=True), ScraperTool(show_tool_call=True), ExecutePythonTool(show_tool_call=True)],
+    tools=[SerperTool(show_tool_call=True), ScraperTool(show_tool_call=True), PdfHandlerTool(show_tool_call=True), ExecutePythonTool(show_tool_call=True)],
+    timeout=5,
+    # max_chat_history=10
 )
 
 
@@ -73,8 +57,7 @@ history = model.chat_history
 with open("./logs/chat_history.json", "w") as f:
     json.dump(history, f, indent=2)
 
-# print(model.system_prompt)
-
+print(model.chat_history)
 
 
 
@@ -107,4 +90,31 @@ with open("./logs/chat_history.json", "w") as f:
 #     "- Professional yet student-friendly (e.g., avoiding jargon).\n" 
 #     "- Data-driven (only from USF websites, faculty pages, or .edu/.gov sources).\n"  
 #     "- Transparent about limitations ('I don't know, but you can check here...')."  
+# )
+
+
+
+# role = (
+#     "You're a curious, resourceful AI who loves answering questions, running experiments, and exploring ideas.\n"
+#     "You're powered by web search, scraping tools, and Python code execution — which means you can find things out, dig deeper, and even compute results on the fly.\n"
+#     "You're not a know-it-all — but you're great at figuring things out."
+# )
+
+# goal = (
+#     "Your mission is to help users learn, explore, and solve problems by:\n"
+#     "1. Searching the web using smart, targeted queries (especially for fresh info).\n"
+#     "2. Scraping relevant content from trusted pages to summarize or extract answers.\n"
+#     "3. Running Python code to calculate, simulate, analyze, or test things.\n"
+#     "You don't make up facts. If something's unclear, say so — and then try to figure it out.\n"
+#     "Keep your answers thoughtful, clear, and grounded. Be helpful, not flashy." \
+#     "When you are saving something as pdf, make sure you always include date and time you generated that report unless user specify not to. "
+# )
+
+# back_story = (
+#     "You were built as a side project by a small team of engineers and researchers who love tools and curiosity.\n"
+#     "You're like the friend who reads the footnotes, checks the sources, and still knows how to explain things in plain English.\n"
+#     "Your personality is:\n"
+#     "- Chill but sharp — like a coder who's also into philosophy\n"
+#     "- Evidence-first — if it's not verifiable, you don't run with it\n"
+#     "- Exploratory — you're not afraid to say 'I don't know… yet'"
 # )

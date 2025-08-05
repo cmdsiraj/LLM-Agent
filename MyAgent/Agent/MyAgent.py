@@ -1,142 +1,146 @@
 import re
 import json
+import time
+
 from MyAgent.Knowledge.KnowledgeSource import FileKnowledge
 from MyAgent.VectorDB.VectorDB import VectorDB
 from MyAgent.Tools.Tool import Tool
-from MyAgent.utils.load_system_prompt import get_system_prompt
+from MyAgent.utils.load_config import load_system_config
 from MyAgent.LLM.LLMBase import LLM
 from MyAgent.LLM.OllamaLLM import OllamaLLM
+from MyAgent.utils.tool_utils import extract_tools_needed
+from MyAgent.Exceptions.CustomExceptions import ToolUseExtractionError
 
+from MyAgent.utils.print_utils import log_message
 
 
 class Agent:
+
     
-    def __init__(self, role: str, goal: str, back_story: str, llm:LLM , chat_history=[], tools:list[Tool]=[], knowledge: list = None, top_k: int = 3, max_chat_history:int=20):
+    
+    def __init__(self, 
+                 role: str, 
+                 goal: str, 
+                 back_story: str, 
+                 llm:LLM, 
+                 chat_history=[], 
+                 tools:list[Tool]=[], 
+                 knowledge: list = None, 
+                 top_k: int = 3, 
+                 max_chat_history:int=20,
+                 timeout: int = None):
         self.llm = llm if llm else OllamaLLM(model_name="llama3")
             
         self.chat_history=chat_history
-        self.system_prompt=get_system_prompt(role=role, goal=goal, back_story=back_story, tools=tools)
+        self.system_prompt=load_system_config(role=role, goal=goal, back_story=back_story, tools=tools)
         self.tools={tool.name: tool for tool in tools}
         self.__vectorDb = None
 
         if knowledge:
-            self.__add_to_db__(knowledgeFiles=knowledge)
+            self._db = VectorDB(knowledgeFiles=knowledge)
+        else:
+            self._db = None
         
-        self.__top_k = top_k
+        self.top_k = top_k
 
         self.__max_chat_history = max_chat_history
-
-
-    
-    def __add_to_db__(self, knowledgeFiles: list[FileKnowledge]):
-        if self.__vectorDb == None:
-            self.__vectorDb = VectorDB()
-
-        for knowledge in knowledgeFiles:
-             for content in knowledge.get_content():
-                self.__vectorDb.add(content)
-
+        self.timeout = timeout
+        self.MAX_TOOL_ITER = 7
 
     
-    def __get_context__(self, query):
-        if self.__vectorDb == None:
-            return self.__vectorDb
+    def _run_tool(self, tool_name: str, args: dict):
+        try:
+            tool = self.tools.get(tool_name)
+            if tool:
+                # print(f"\nArgs: {args}\n its type {type(args)}")
+                return tool.run(**args)
+            else:
+                return f"{tool_name} not found"
+        except Exception as e:
+            # print(f"Got exception while running tools (tool_name: {tool_name}): {e}" )
+            return f"Got exception while running tools (tool_name: {tool_name}): {e}"
+
+    def _run_tools(self, tools_needed: list[Tool]):
+        print(f"From _run_tools func ******{tools_needed}******", "\n\n")
+        try:
+            tools_results = []
+            for tool in tools_needed:
+                # print(f"Running tool: {tool}")
+                tool_result = self._run_tool(**tool)
+                tools_results.append(f'TOOL RESULT FOR {tool["tool_name"]} : {tool_result}')
+            
+            return '\n'.join(tools_results)
+        except Exception as e:
+            print(f"Got exception in _run_tools func: {e}")
+            print(f"argument passed: {tool}")
+            return f"Got exception in _run_tools func: {e}"
         
-        return self.__vectorDb.search(query, top_k=self.__top_k)
-    
-    
-
-    def __run_tools__(self, tool_name: str, args: dict):
-        tool = self.tools.get(tool_name)
-        if tool:
-            return tool.run(**args)
-        else:
-            return f"{tool_name} not found"
-    
-
-    
-    def __extract_tools_needed__(self, agent_text):
-
-        block_pattern = r"(<?/?TOOLUSE>?.*?<?/?TOOLUSE>?)"
-        result1 = re.findall(block_pattern, agent_text, re.DOTALL | re.IGNORECASE)
-
-        in_block_pattern = r"TOOL:\s*(.*?)\s*ARGS:\s*({.*?})"
-        tools_needed = []
-    
-        for block in result1:
-            found_tool = re.findall(in_block_pattern, block, re.DOTALL)
-            name = found_tool[0][0]
-            args_str=found_tool[0][1].strip()
-            try:
-                args = json.loads(args_str)
-            except json.JSONDecodeError as e:
-                args = json.loads(args_str.replace("'", '"'))
-            except Exception as e:
-                print(f"Error occured while decoidng args: {e}")
-                return
-            tools_needed.append({"tool_name": name, "args": args})
-
-        if len(tools_needed)>0:
-            return tools_needed
-        else:
-            None
-    
-
-    def __get_tool_execution_results(self, tools_needed: list[Tool]):
-        tools_results = []
-        for tool in tools_needed:
-            tool_result = self.__run_tools__(**tool)
-            tools_results.append(f'TOOL RESULT OF {tool["tool_name"]} : {tool_result}')
-        
-        return '\n'.join(tools_results)
-
+    def _sleep(self):
+        print(f"Sending Message to {self.llm.model_name()}:", end=' ')
+        for i in range(0, self.timeout):
+            print(f"{i+1}...", end=' ', flush=True)
+            time.sleep(1)
+        print()
     
 
     def __chat__(self, messages):
         prompt = [self.system_prompt] + messages
-        # result = ollama.chat(model=self.model, messages=prompt)
+        self._sleep()
         result = self.llm.chat(messages=prompt)
         return result
         
     def chat(self, user_input):
 
+        reply = ''
         # Retriving required knowledge (if knowledge is setup)
-        if self.__vectorDb:
-            context = self.__get_context__(user_input)
+        if self._db:
+            context = self._db.get_context(user_input, self.top_k)
             user_input = (
                     "you can use the context to answer the question:\n"
                     f"{context}"
                     f"\nQuestion: {user_input}"
             )
         
-        self.chat_history.append({"role": "user", "content":user_input})
+        self.chat_history.append({"role": "user", "content":"[Current New Message]" + user_input})
 
-        reply = self.__chat__(self.chat_history)
+        tool_iter = 0
 
-        tools_needed = self.__extract_tools_needed__(reply)
-
-        if(tools_needed):
-             while True:
-                #Now, passing the prompt to model
+        while True:
+            if tool_iter >= self.MAX_TOOL_ITER:
+                log_message(f"Ending the model conversation because it reached maximum tool use in this iteration ({tool_iter})")
+                self.chat_history.append({"role": "System", "content": "Use have reached max tool uses in a turn. if you have called a tool repeatedly because of some error, let the user know about it, about why you are unable to use the tool. if you reached this limit without tool repeated calls and just want to use more tools, tell the user about this to, in next iteration you will have your tool calls freed again."})
                 reply = self.__chat__(self.chat_history)
+                return reply
 
-                tools_needed = self.__extract_tools_needed__(reply)
-                # Checking if the model response has involved use of any tools
-                if(tools_needed):
-                    tools_content = self.__get_tool_execution_results(tools_needed)
-                    self.chat_history.append({
-                        "role": 
-                            "tool assistant", 
-                        "content": 
-                            "Use the following content from tools to answer the users questions:\n"
-                            f"{tools_content}"
-                            f"user question: {user_input}"
-                        })
-                else:
-                    break
+            reply = self.__chat__(self.chat_history)
 
-            # We include the agents final response in our chat history
-        self.chat_history.append({"role": "assistant", "content": reply})
-        self.chat_history = self.chat_history[-self.__max_chat_history:]
+            if self.chat_history[-1]["role"] == "user":
+                self.chat_history[-1]["content"] = self.chat_history[-1]["content"].replace("[Current New Message]", "[Previous Conversation]")
 
-        return reply
+            try:
+                tools_needed = extract_tools_needed(reply)
+            except Exception as e:
+                tool_iter+=1
+                reply = {"role": "system", "content": f"Encountered an error while try to parse the tools information from your previous response (from a tool use request). please check and try again. here is the error message to give you more insight: {e}"}
+                log_message(f"Error while Extracting tools needed: {e}")
+                continue
+
+            if tools_needed:
+                tool_iter += 1
+                tools_content = self._run_tools(tools_needed)
+
+                prompt_with_tool_result = (
+                    "Use the following content from tools to answer the user's question:\n"
+                    f"\n{tools_content}"
+                    f"\nuser question (repeating question again along with the tool result.): {user_input}"
+                )
+
+                if tool_iter == self.MAX_TOOL_ITER:
+                    prompt_with_tool_result += "\nTool usage limit reached for this turn. Please review the current results or errors and provide further instructions. Tools will be available again after your next prompt."
+
+                self.chat_history.append({"role": "assistant", "content": prompt_with_tool_result})
+
+            else:
+                self.chat_history.append({"role": "assistant", "content": reply})
+                self.chat_history = self.chat_history[-self.__max_chat_history:]
+                return reply

@@ -7,9 +7,10 @@ from MyAgent.utils.print_utils import log_tool_action
 
 class ExecutePythonTool(Tool):
 
-    def __init__(self, show_tool_call=False):
+    def __init__(self, show_tool_call=True):
         self.__name = "Python_code_execution_tool"
-        self.__description = "Given a python code as string, will execute and returns back the result of execution"
+        self.__description = ("Given a python code as string, will execute and returns back the result of execution. " 
+                              "Don't include any comments in the code when you are using this tool.")
         self.show_tool_call = show_tool_call
     
     @property

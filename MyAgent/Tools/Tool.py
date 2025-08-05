@@ -22,6 +22,6 @@ class Tool(ABC):
         result = self._run_implementation(**kwargs)
         log_message = f"Tool '{self.name}' - Description: '{self.description}' - called with args:\n{kwargs}\n\n"
         with open("logs/tool_calls.txt", "+a") as f:
-            f.write(f"-"*20)
+            f.write(f"-"*20+"\n",)
             f.write(log_message)
         return result
